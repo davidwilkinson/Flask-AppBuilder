@@ -20,15 +20,7 @@ function set_openid(url, pr)
 
 
 function signin() {
-    if (currentSelection != "") {
-        window.location.href = baseLoginUrl + currentSelection + next;
-    }
-}
-
-function register() {
-    if (currentSelection != "") {
-        window.location.href = baseRegisterUrl + currentSelection + '/register' + next;
-    }
+    window.location.href = baseLoginUrl + currentSelection + next;
 }
 
 
@@ -43,15 +35,6 @@ function register() {
                 <div style="padding-top:30px" class="panel-body" >
 
                     <div class="help-block">{{_("On the next page you will be directed to our secure login service. If you have used this before, sign in with your credentials. Otherwise, select 'Sign up' on the next page.")}}</div>
-                    <div class="center-block btn-group btn-group-lg" role="group">
-                        <center>
-                        {% for pr in providers %}
-                            <a class="btn btn-primary" href="javascript:set_openid('{{url_for('AuthOAuthView.login', provider=pr.name)}}', '{{pr.name}}');">
-                                <i id="{{pr.name}}" class="provider-select fa {{pr.icon}} fa-3x"></i>
-                            </a>
-                        {% endfor %}
-                        </center>
-                     </div>
                      <div>
                          <br></br>
                         <a onclick="signin();" class="btn btn-primary btn-block" type="submit">{{_('Proceed')}}</a>
