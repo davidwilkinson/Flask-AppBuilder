@@ -42,7 +42,7 @@ function register() {
                 </div>
                 <div style="padding-top:30px" class="panel-body" >
 
-                    <div class="help-block">{{_("Please choose one of the following providers:")}}</div>
+                    <div class="help-block">{{_("On the next page you will be directed to our secure login service. If you have used this before, sign in with your credentials. Otherwise, select 'Sign up' on the next page.")}}</div>
                     <div class="center-block btn-group btn-group-lg" role="group">
                         <center>
                         {% for pr in providers %}
@@ -54,13 +54,7 @@ function register() {
                      </div>
                      <div>
                          <br></br>
-                        <a onclick="signin();" class="btn btn-primary btn-block" type="submit">{{_('Sign In')}}</a>
-                        {% if appbuilder.sm.auth_user_registration %}
-                            <a onclick="register();" class="btn btn-block btn-primary" data-toggle="tooltip" rel="tooltip"
-                                title="{{_('If you are not already a user, please register')}}">
-                                {{_('Register')}}
-                            </a>
-                        {% endif %}
+                        <a onclick="signin();" class="btn btn-primary btn-block" type="submit">{{_('Proceed')}}</a>
                      </div>
                 </div>
             </div>
