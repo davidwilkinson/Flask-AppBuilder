@@ -1,6 +1,7 @@
 from typing import List
 
 from flask import current_app, url_for
+from flask_babel import gettext as __
 
 from .api import BaseApi, expose
 from .basemanager import BaseManager
@@ -64,24 +65,28 @@ class Menu(object):
         )
 
         for i, item in enumerate(menu):
-            if item.name == '-' and not i == len(menu) - 1:
-                ret_list.append('-')
+            if item.name == "-" and not i == len(menu) - 1:
+                ret_list.append("-")
             elif item.name not in allowed_menus:
                 continue
             elif item.childs:
-                ret_list.append({
-                    "name": item.name,
-                    "icon": item.icon,
-                    "label": str(item.label),
-                    "childs": self.get_data(menu=item.childs)
-                })
+                ret_list.append(
+                    {
+                        "name": item.name,
+                        "icon": item.icon,
+                        "label": __(str(item.label)),
+                        "childs": self.get_data(menu=item.childs),
+                    }
+                )
             else:
-                ret_list.append({
-                    "name": item.name,
-                    "icon": item.icon,
-                    "label": str(item.label),
-                    "url": item.get_url()
-                })
+                ret_list.append(
+                    {
+                        "name": item.name,
+                        "icon": item.icon,
+                        "label": __(str(item.label)),
+                        "url": item.get_url(),
+                    }
+                )
         return ret_list
 
     def find(self, name, menu=None):
@@ -157,14 +162,18 @@ class Menu(object):
 
 class MenuApi(BaseApi):
     resource_name = "menu"
+    openapi_spec_tag = "Menu"
 
-    @expose('/', methods=["GET"])
+    @expose("/", methods=["GET"])
     @protect(allow_browser_login=True)
-    @permission_name('get')
+    @permission_name("get")
     def get_menu_data(self):
         """An endpoint for retreiving the menu.
         ---
         get:
+          description: >-
+            Get the menu data structure.
+            Returns a forest like structure with the menu the user has access to
           responses:
             200:
               description: Get menu data
@@ -174,17 +183,23 @@ class MenuApi(BaseApi):
                     type: object
                     properties:
                       result:
+                        description: Menu items in a forest like data structure
                         type: array
                         items:
                           type: object
                           properties:
                             name:
+                              description: >-
+                                The internal menu item name, maps to permission_name
                               type: string
                             label:
+                              description: Pretty name for the menu item
                               type: string
                             icon:
+                              description: Icon name to show for this menu item
                               type: string
                             url:
+                              description: The URL for the menu item
                               type: string
                             childs:
                               type: array
@@ -198,5 +213,5 @@ class MenuApi(BaseApi):
 
 class MenuApiManager(BaseManager):
     def register_views(self):
-        if self.appbuilder.app.config.get('FAB_ADD_MENU_API', True):
+        if self.appbuilder.app.config.get("FAB_ADD_MENU_API", True):
             self.appbuilder.add_api(MenuApi)

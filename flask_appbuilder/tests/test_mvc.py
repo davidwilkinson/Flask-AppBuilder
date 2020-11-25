@@ -5,6 +5,7 @@ from typing import Set
 
 from flask import Flask, redirect, request, session
 from flask_appbuilder import AppBuilder, SQLA
+from flask_appbuilder.actions import action
 from flask_appbuilder.charts.views import (
     ChartView,
     DirectByChartView,
@@ -19,6 +20,7 @@ from flask_appbuilder.models.group import aggregate_avg, aggregate_count, aggreg
 from flask_appbuilder.models.sqla.filters import FilterEqual, FilterStartsWith
 from flask_appbuilder.models.sqla.interface import SQLAInterface
 from flask_appbuilder.views import CompactCRUDMixin, MasterDetailView, ModelView
+from flask_wtf import CSRFProtect
 import jinja2
 
 from .base import FABTestCase
@@ -58,7 +60,7 @@ NOTNULL_VALIDATION_STRING = "This field is required"
 log = logging.getLogger(__name__)
 
 
-class AMVCBabelTestCase(FABTestCase):
+class MVCBabelTestCase(FABTestCase):
     def test_babel_empty_languages(self):
         """
             MVC: Test babel empty languages
@@ -122,6 +124,63 @@ class BaseMVCTestCase(FABTestCase):
             for item in self.app.url_map.iter_rules()
             if item.endpoint.split(".")[0] == view_name
         }
+
+
+class MVCCSRFTestCase(BaseMVCTestCase):
+    def setUp(self):
+
+        self.app = Flask(__name__)
+        self.app.config.from_object("flask_appbuilder.tests.config_api")
+        self.app.config["WTF_CSRF_ENABLED"] = True
+
+        self.csrf = CSRFProtect(self.app)
+        self.db = SQLA(self.app)
+        self.appbuilder = AppBuilder(self.app, self.db.session)
+
+        class Model2View(ModelView):
+            datamodel = SQLAInterface(Model1)
+
+        self.appbuilder.add_view(Model2View, "Model2", category="Model2")
+
+    def test_a_csrf_delete_not_allowed(self):
+        """
+            MVC: Test GET delete with CSRF is not allowed
+        """
+        client = self.app.test_client()
+        self.browser_login(client, USERNAME_ADMIN, PASSWORD_ADMIN)
+
+        model = (
+            self.appbuilder.get_session.query(Model2)
+            .filter_by(field_string="test0")
+            .one_or_none()
+        )
+        pk = model.id
+        rv = client.get(f"/model2view/delete/{pk}")
+
+        self.assertEqual(rv.status_code, 302)
+        model = (
+            self.appbuilder.get_session.query(Model2)
+            .filter_by(field_string="test0")
+            .one_or_none()
+        )
+        self.assertIsNotNone(model)
+
+    def test_a_csrf_delete_protected(self):
+        """
+            MVC: Test POST delete with CSRF
+        """
+        client = self.app.test_client()
+        self.browser_login(client, USERNAME_ADMIN, PASSWORD_ADMIN)
+
+        model = (
+            self.appbuilder.get_session.query(Model1)
+            .filter_by(field_string="test0")
+            .one_or_none()
+        )
+        pk = model.id
+        rv = client.post(f"/model2view/delete/{pk}")
+        # Missing CSRF token
+        self.assertEqual(rv.status_code, 400)
 
 
 class MVCSwitchRouteMethodsTestCase(BaseMVCTestCase):
@@ -307,6 +366,8 @@ class MVCTestCase(BaseMVCTestCase):
                 "group": [["field_string", FilterEqual, "test0"]]
             }
 
+            order_columns = ["field_string", "group.field_string"]
+
         class Model22View(ModelView):
             datamodel = SQLAInterface(Model2)
             list_columns = [
@@ -323,13 +384,21 @@ class MVCTestCase(BaseMVCTestCase):
         class Model1View(ModelView):
             datamodel = SQLAInterface(Model1)
             related_views = [Model2View]
-            list_columns = ["field_string", "field_file"]
+            list_columns = ["field_string", "field_integer"]
 
         class Model3View(ModelView):
             datamodel = SQLAInterface(Model3)
             list_columns = ["pk1", "pk2", "field_string"]
             add_columns = ["pk1", "pk2", "field_string"]
             edit_columns = ["pk1", "pk2", "field_string"]
+
+            @action(
+                "muldelete", "Delete", "Delete all Really?", "fa-rocket", single=False
+            )
+            def muldelete(self, items):
+                self.datamodel.delete_all(items)
+                self.update_redirect()
+                return redirect(self.get_redirect())
 
         class Model1CompactView(CompactCRUDMixin, ModelView):
             datamodel = SQLAInterface(Model1)
@@ -771,6 +840,33 @@ class MVCTestCase(BaseMVCTestCase):
         model = self.db.session.query(Model3).filter_by(pk1=2).one_or_none()
         self.assertEqual(model, None)
 
+        # Add it back, then delete via muldelete
+        self.appbuilder.get_session.add(
+            Model3(pk1=1, pk2=datetime.datetime(2017, 1, 1), field_string="baz")
+        )
+        self.appbuilder.get_session.commit()
+        rv = client.post(
+            "/model3view/action_post",
+            data=dict(
+                action="muldelete",
+                rowid=[
+                    json.dumps(
+                        [
+                            "1",
+                            {
+                                "_type": "datetime",
+                                "value": "2017-01-01T00:00:00.000000",
+                            },
+                        ]
+                    )
+                ],
+            ),
+            follow_redirects=True,
+        )
+        self.assertEqual(rv.status_code, 200)
+        model = self.db.session.query(Model3).filter_by(pk1=1).one_or_none()
+        self.assertEqual(model, None)
+
     def test_model_crud_add_with_enum(self):
         """
             Test Model add for Model with Enum Columns
@@ -1000,9 +1096,22 @@ class MVCTestCase(BaseMVCTestCase):
         data = rv.data.decode("utf-8")
         self.assertIn(f"test{MODEL1_DATA_SIZE-1}", data)
 
+    def test_model_list_order_related(self):
+        """
+        Test Model order related field on lists
+        """
+        client = self.app.test_client()
+        self.browser_login(client, USERNAME_ADMIN, PASSWORD_ADMIN)
+
+        rv = client.get(
+            "/model2view/list?_oc_Model2View=group.field_string&_od_Model2View=asc",
+            follow_redirects=True,
+        )
+        self.assertEqual(rv.status_code, 200)
+
     def test_model_add_unique_validation(self):
         """
-            Test Model add unique field validation
+        Test Model add unique field validation
         """
         client = self.app.test_client()
         self.browser_login(client, USERNAME_ADMIN, PASSWORD_ADMIN)
@@ -1102,7 +1211,7 @@ class MVCTestCase(BaseMVCTestCase):
         rv = client.get("/model2view/list/")
         self.assertEqual(rv.status_code, 200)
         data = rv.data.decode("utf-8")
-        self.assertIn("field_method_value", data)
+        self.assertIn("_field_method", data)
 
     def test_compactCRUDMixin(self):
         """
