@@ -41,6 +41,15 @@ Use config.py to configure the following parameters. By default it will use SQLL
 |                                        | Requires ``jmespath`` to be installed.     |           |
 |                                        | See :ref:`jmespath-examples` for examples  |           |
 +----------------------------------------+--------------------------------------------+-----------+
+| AUTH_ROLES_SYNC_AT_LOGIN               | Sets if user's roles are replaced each     |   No      |
+|                                        | login with those received from LDAP/OAUTH  |           |
+|                                        | Default: False                             |           |
++----------------------------------------+--------------------------------------------+-----------+
+| AUTH_ROLES_MAPPING                     | A mapping from LDAP/OAUTH group names      |   No      |
+|                                        | to FAB roles                               |           |
+|                                        |                                            |           |
+|                                        | See example under AUTH_LDAP_GROUP_FIELD    |           |
++----------------------------------------+--------------------------------------------+-----------+
 | AUTH_LDAP_SERVER                       | define your ldap server when AUTH_TYPE=2   |   Cond.   |
 |                                        | example:                                   |           |
 |                                        |                                            |           |
@@ -102,6 +111,27 @@ Use config.py to configure the following parameters. By default it will use SQLL
 |                                        | AUTH_LDAP_SEARCH = "ou=people,dc=example"  |           |
 |                                        |                                            |           |
 |                                        | AUTH_LDAP_UID_FIELD = "uid"                |           |
++----------------------------------------+--------------------------------------------+-----------+
+| AUTH_LDAP_GROUP_FIELD                  | sets the field in the ldap directory that  |   No      |
+|                                        | stores the user's group uids. This field   |           |
+|                                        | is used in combination with                |           |
+|                                        | AUTH_ROLES_MAPPING to propagate the users  |           |
+|                                        | groups into the User database.             |           |
+|                                        | Default is "memberOf".                     |           |
+|                                        | example:                                   |           |
+|                                        |                                            |           |
+|                                        | AUTH_TYPE = 2                              |           |
+|                                        |                                            |           |
+|                                        | AUTH_LDAP_SERVER = "ldap://ldapserver.new" |           |
+|                                        |                                            |           |
+|                                        | AUTH_LDAP_SEARCH = "ou=people,dc=example"  |           |
+|                                        |                                            |           |
+|                                        | AUTH_LDAP_GROUP_FIELD = "memberOf"         |           |
+|                                        |                                            |           |
+|                                        | AUTH_ROLES_MAPPING = {                     |           |
+|                                        |   "cn=User,ou=groups,dc=example,dc=com":   |           |
+|                                        |     ["User"]                               |           |
+|                                        | }                                          |           |
 +----------------------------------------+--------------------------------------------+-----------+
 | AUTH_LDAP_FIRSTNAME_FIELD              | sets the field in the ldap directory that  |   No      |
 |                                        | stores the user's first name. This field   |           |
@@ -172,6 +202,9 @@ Use config.py to configure the following parameters. By default it will use SQLL
 | AUTH_ROLE_PUBLIC                       | Special Role that holds the public         |   No      |
 |                                        | permissions, no authentication needed.     |           |
 +----------------------------------------+--------------------------------------------+-----------+
+| AUTH_API_LOGIN_ALLOW_MULTIPLE_PROVIDERS| Allow REST API login with alternative auth |   No      |
+| True|False                             | providers (default False)                  |           |           |
++----------------------------------------+--------------------------------------------+-----------+
 | APP_NAME                               | The name of your application.              |   No      |
 +----------------------------------------+--------------------------------------------+-----------+
 | APP_THEME                              | Various themes for you to choose           |   No      |
@@ -210,6 +243,8 @@ Use config.py to configure the following parameters. By default it will use SQLL
 | FAB_API_MAX_PAGE_SIZE                  | Sets a limit for FAB Model Api page size   |   No      |
 +----------------------------------------+--------------------------------------------+-----------+
 | FAB_API_SWAGGER_UI                     | Enables a Swagger UI view (Boolean)        |   No      |
++----------------------------------------+--------------------------------------------+-----------+
+| FAB_API_SWAGGER_TEMPLATE               | Path of your custom Swagger Template       |   No      |
 +----------------------------------------+--------------------------------------------+-----------+
 | FAB_API_ALLOW_JSON_QS                  | Allow query string parameters to be JSON   |           |
 |                                        | Default is True (Boolean)                  |   No      |
@@ -252,6 +287,13 @@ Use config.py to configure the following parameters. By default it will use SQLL
 +----------------------------------------+--------------------------------------------+-----------+
 | FAB_STATIC_URL_PATH                    | Path to override default static folder     |           |
 |                                        |                                            |   No      |
++----------------------------------------+--------------------------------------------+-----------+
+| FAB_PASSWORD_COMPLEXITY_VALIDATOR      | Hook for your own custom password          |           |
+|                                        | validator function.                        |   No      |
++----------------------------------------+--------------------------------------------+-----------+
+| FAB_PASSWORD_COMPLEXITY_ENABLED        | Enables the password complexity            |           |
+|                                        | validation for AUTH database users.        |   No      |
+|                                        | Default is False.                          |           |
 +----------------------------------------+--------------------------------------------+-----------+
 
 

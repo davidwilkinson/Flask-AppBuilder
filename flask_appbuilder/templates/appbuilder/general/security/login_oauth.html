@@ -4,11 +4,9 @@
 {% block content %}
 
 <script type="text/javascript">
-
     var baseLoginUrl = "{{appbuilder.get_url_for_login}}";
     var baseRegisterUrl = "{{appbuilder.get_url_for_login}}";
     var next = "?next={{request.args.get('next', '')}}"
-
     var currentSelection = "";
 
     function set_openid(pr) {
@@ -21,7 +19,6 @@
 function signin() {
     window.location.href = baseLoginUrl + 'login' + next;
 }
-
 
 </script>
 
@@ -42,6 +39,5 @@ function signin() {
         </div>
     </div>
 </div>
-
 
 {% endblock %}
