@@ -2,9 +2,14 @@ import datetime
 import logging
 
 from dateutil import parser
+from flask_appbuilder.exceptions import ApplyFilterException
+from flask_appbuilder.models.filters import (
+    BaseFilter,
+    BaseFilterConverter,
+    FilterRelation,
+)
 from flask_babel import lazy_gettext
-
-from ..filters import BaseFilter, BaseFilterConverter, FilterRelation
+from sqlalchemy.exc import SQLAlchemyError
 
 log = logging.getLogger(__name__)
 
@@ -146,6 +151,7 @@ class FilterNotEqual(BaseFilter):
     def apply(self, query, value):
         query, field = get_field_setup_query(query, self.model, self.column_name)
         value = set_value_to_type(self.datamodel, self.column_name, value)
+
         return query.filter(field != value)
 
 
@@ -156,6 +162,10 @@ class FilterGreater(BaseFilter):
     def apply(self, query, value):
         query, field = get_field_setup_query(query, self.model, self.column_name)
         value = set_value_to_type(self.datamodel, self.column_name, value)
+
+        if value is None:
+            return query
+
         return query.filter(field > value)
 
 
@@ -166,6 +176,10 @@ class FilterSmaller(BaseFilter):
     def apply(self, query, value):
         query, field = get_field_setup_query(query, self.model, self.column_name)
         value = set_value_to_type(self.datamodel, self.column_name, value)
+
+        if value is None:
+            return query
+
         return query.filter(field < value)
 
 
@@ -175,7 +189,14 @@ class FilterRelationOneToManyEqual(FilterRelation):
 
     def apply(self, query, value):
         query, field = get_field_setup_query(query, self.model, self.column_name)
-        rel_obj = self.datamodel.get_related_obj(self.column_name, value)
+        try:
+            rel_obj = self.datamodel.get_related_obj(self.column_name, value)
+        except SQLAlchemyError as exc:
+            logging.warning(
+                "Filter exception for %s with value %s, will not apply", field, value
+            )
+            self.datamodel.session.rollback()
+            raise ApplyFilterException(exception=exc)
         return query.filter(field == rel_obj)
 
 
@@ -185,7 +206,14 @@ class FilterRelationOneToManyNotEqual(FilterRelation):
 
     def apply(self, query, value):
         query, field = get_field_setup_query(query, self.model, self.column_name)
-        rel_obj = self.datamodel.get_related_obj(self.column_name, value)
+        try:
+            rel_obj = self.datamodel.get_related_obj(self.column_name, value)
+        except SQLAlchemyError as exc:
+            logging.warning(
+                "Filter exception for %s with value %s, will not apply", field, value
+            )
+            self.datamodel.session.rollback()
+            raise ApplyFilterException(exception=exc)
         return query.filter(field != rel_obj)
 
 
@@ -193,15 +221,42 @@ class FilterRelationManyToManyEqual(FilterRelation):
     name = lazy_gettext("Relation as Many")
     arg_name = "rel_m_m"
 
+    def apply_item(self, query, field, value_item):
+        """
+        Get object by column_name and value_item, then apply filter if object exists
+        Query with new filter applied
+        """
+        try:
+            rel_obj = self.datamodel.get_related_obj(self.column_name, value_item)
+        except SQLAlchemyError as exc:
+            logging.warning(
+                "Filter exception for %s with value %s, will not apply",
+                field,
+                value_item,
+            )
+            self.datamodel.session.rollback()
+            raise ApplyFilterException(exception=exc)
+
+        if rel_obj:
+            return query.filter(field.contains(rel_obj))
+        else:
+            log.error(
+                "Related object for column: %s, value: %s return Null",
+                self.column_name,
+                value_item,
+            )
+
+        return query
+
     def apply(self, query, value):
         query, field = get_field_setup_query(query, self.model, self.column_name)
+
         if isinstance(value, list):
             for value_item in value:
-                rel_obj = self.datamodel.get_related_obj(self.column_name, value_item)
-                query = query.filter(field.contains(rel_obj))
+                query = self.apply_item(query, field, value_item)
             return query
-        rel_obj = self.datamodel.get_related_obj(self.column_name, value)
-        return query.filter(field.contains(rel_obj))
+
+        return self.apply_item(query, field, value)
 
 
 class FilterEqualFunction(BaseFilter):

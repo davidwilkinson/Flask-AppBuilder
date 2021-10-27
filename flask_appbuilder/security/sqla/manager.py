@@ -1,9 +1,12 @@
+from datetime import datetime
+import json
 import logging
 from typing import List, Optional
 import uuid
 
 from sqlalchemy import and_, func, literal
 from sqlalchemy.engine.reflection import Inspector
+from sqlalchemy.orm import contains_eager
 from sqlalchemy.orm.exc import MultipleResultsFound
 from werkzeug.security import generate_password_hash
 
@@ -202,7 +205,7 @@ class SecurityManager(BaseSecurityManager):
             user.username = username
             user.email = email
             user.active = True
-            user.roles.append(role)
+            user.roles = role if isinstance(role, list) else [role]
             if hashed_password:
                 user.password = hashed_password
             else:
@@ -238,12 +241,18 @@ class SecurityManager(BaseSecurityManager):
     -----------------------
     """
 
-    def add_role(self, name: str) -> Optional[Role]:
+    def add_role(
+        self, name: str, permissions: Optional[List[PermissionView]] = None
+    ) -> Optional[Role]:
+        if not permissions:
+            permissions = []
+
         role = self.find_role(name)
         if role is None:
             try:
                 role = self.role_model()
                 role.name = name
+                role.permissions = permissions
                 self.get_session.add(role)
                 self.get_session.commit()
                 log.info(c.LOGMSG_INF_SEC_ADD_ROLE.format(name))
@@ -358,6 +367,21 @@ class SecurityManager(BaseSecurityManager):
                 self.role_model.id.in_(role_ids),
             )
         ).all()
+
+    def get_db_role_permissions(self, role_id: int) -> List[PermissionView]:
+        """
+        Get all DB permissions from a role (one single query)
+        """
+        return (
+            self.appbuilder.get_session.query(PermissionView)
+            .join(Permission)
+            .join(ViewMenu)
+            .join(PermissionView.role)
+            .filter(Role.id == role_id)
+            .options(contains_eager(PermissionView.permission))
+            .options(contains_eager(PermissionView.view_menu))
+            .all()
+        )
 
     def add_permission(self, name):
         """
@@ -623,3 +647,53 @@ class SecurityManager(BaseSecurityManager):
             except Exception as e:
                 log.error(c.LOGMSG_ERR_SEC_DEL_PERMROLE.format(str(e)))
                 self.get_session.rollback()
+
+    def export_roles(self, path: Optional[str] = None) -> None:
+        """ Exports roles to JSON file. """
+        timestamp = datetime.now().strftime("%Y%m%dT%H%M%S")
+        filename = path or f"roles_export_{timestamp}.json"
+
+        serialized_roles = []
+
+        for role in self.get_all_roles():
+            serialized_role = {"name": role.name, "permissions": []}
+            for pvm in role.permissions:
+                permission = pvm.permission
+                view_menu = pvm.view_menu
+                permission_view_menu = {
+                    "permission": {"name": permission.name},
+                    "view_menu": {"name": view_menu.name},
+                }
+                serialized_role["permissions"].append(permission_view_menu)
+            serialized_roles.append(serialized_role)
+
+        with open(filename, "w") as fd:
+            fd.write(json.dumps(serialized_roles))
+
+    def import_roles(self, path: str) -> None:
+        """ Imports roles from JSON file. """
+
+        session = self.get_session()
+
+        with open(path, "r") as fd:
+            roles_json = json.loads(fd.read())
+
+        roles = []
+
+        for role_kwargs in roles_json:
+            role = self.add_role(role_kwargs["name"])
+            permission_view_menus = [
+                self.add_permission_view_menu(
+                    permission_name=pvm_kwargs["permission"]["name"],
+                    view_menu_name=pvm_kwargs["view_menu"]["name"],
+                )
+                for pvm_kwargs in role_kwargs["permissions"]
+            ]
+
+            for permission_view_menu in permission_view_menus:
+                if permission_view_menu not in role.permissions:
+                    role.permissions.append(permission_view_menu)
+            roles.append(role)
+
+        session.add_all(roles)
+        session.commit()
