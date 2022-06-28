@@ -1,6 +1,96 @@
 Flask-AppBuilder ChangeLog
 ==========================
 
+Improvements and Bug fixes on 4.1.2
+-----------------------------------
+
+- fix: remove sqlite dbs from examples (#1853) [Daniel Vaz Gaspar]
+- fix(MVC): discard excluded filters from query (#1862) [Daniel Vaz Gaspar]
+
+Improvements and Bug fixes on 4.1.1
+-----------------------------------
+
+- fix: custom security class import, bad cast (#1851) [Daniel Vaz Gaspar]
+- fix: Set certificates before reconnecting to LDAP (#1846) [Sebastian Bernauer]
+
+Improvements and Bug fixes on 4.1.0
+-----------------------------------
+
+- docs: add FAB_ADD_SECURITY_API config option (#1840) [Daniel Vaz Gaspar]
+- feat: add keycloak auth provider options (#1832) [nilivingston]
+- docs: add Azure OAUTH example (#1837) [Mathew Wicks]
+- fix: security api (#1831) [Daniel Vaz Gaspar]
+- fix: dependency constraints, bump flask-login, flask-wtf (#1838) [Daniel Vaz Gaspar]
+- fix: noop user update on Auth db, use set user model (#1834) [Daniel Vaz Gaspar]
+- chore: bump postgres to 14 (#1833) [Daniel Vaz Gaspar]
+- chore: Update and fix german translation (#1827) [Dosenpfand]
+- chore: Enhance is_safe_redirect_url (#1826) [Geido]
+- feat: Add CRUD apis for role, permission, user (#1801) [Mayur]
+- docs: updated brackets in OAuth Authentication (#1798) [David Berg]
+- chore: add Slovenian language (#1828) [dkrat7]
+- fix: doc requirements (#1820) [Daniel Vaz Gaspar]
+
+Improvements and Bug fixes on 4.0.0
+-----------------------------------
+
+- chore: major bumps Flask, Click, PyJWT and flask-jwt-extended (#1817) [Daniel Vaz Gaspar]
+  [Breaking changes]
+
+Improvements and Bug fixes on 3.4.5
+-----------------------------------
+
+- test: Add test for `export-roles --indent`'s argument “duck casting” to int (#1811) [Étienne Boisseau-Sierra]
+- fix: next url on login (OAuth, OID, DB) (#1804) [Daniel Vaz Gaspar]
+- docs: Update doc i18 to flask_babel (#1792) [Federico Padua]
+- feat(cli): allow `export-roles` to be beautified (#1724) [Étienne Boisseau-Sierra]
+
+Improvements and Bug fixes on 3.4.4
+-----------------------------------
+
+- fix: Support SQLAlchemy 1.4.X (#1786) [Daniel Vaz Gaspar]
+- feat: allow multiple values for the same filter (#1737) [Will Rogers]
+- fix: Only update user.last_login on successful authentication (#1775) [blag]
+- chore: update jsonschema pip package (#1782) [Hugh A. Miles II]
+
+Improvements and Bug fixes on 3.4.3
+-----------------------------------
+
+- fix: openapi on and off config flag (#1770) [Daniel Vaz Gaspar]
+- fix: data not defined in azure oauth (#1769) [Dalton Pearson]
+- fix: Handle authorize_access_token exception (#1766) [Michał Konarski]
+- fix: Set role and confirm password while adding user mandatory (#1758) [Mayur]
+- fix: required roles on user form not showing error msg (#1772) [Daniel Vaz Gaspar]
+- fix: make servers be actual servers on swagger, full endpoint paths (#1773) [Daniel Vaz Gaspar]
+- docs: adds missing config key FAB_OPENAPI_SERVERS (#1776)
+
+Improvements and Bug fixes on 3.4.2
+-----------------------------------
+
+- chore: Use assertEqual instead of assertEquals for Python 3.11 compatibility (#1763) [Karthikeyan Singaravelan]
+- chore: improve code quality and balance (#1761) [Daniel Vaz Gaspar]
+
+Improvements and Bug fixes on 3.4.1
+-----------------------------------
+
+- feat: Adding role_keys into Azure OAuth (#1744) [Michael Yee]
+- docs: Fix small documentation issues (#1755) [Dosenpfand]
+- fix: 1154 Add LOGOUT_REDIRECT_URL setting (#1749) [blag]
+- fix: optional unauthorized status codes (#1753) [Daniel Vaz Gaspar]
+- docs: Fix indentation of function content (#1752) [akettmann-e24]
+- fix: optionally return HTTP 403 instead of 401 when unauthorized (#1748) [Daniel Vaz Gaspar]
+- chore: Redirect to prev url on login (#1747) [Geido]
+- docs: add aws cognito setup code examples (#1746) [Pin Jin]
+- fix: Added sr-only class to icon only links (#1727) [Thomas Stivers]
+- chore: [Deprecation] Use Markup instead of HTMLString (#1729) [Andrey Polegoshko]
+
+Improvements and Bug fixes on 3.4.0
+-----------------------------------
+
+- chore: pin down WTForms (#1735) [Daniel Vaz Gaspar]
+- fix: ModuleNotFoundError from wtforms 3.0.0 (#1733) [Ke Zhu]
+- fix: add .env for docker-compose (#1728) [Daniel Vaz Gaspar]
+- fix: OAuth login flow (#1707) [Daniel Vaz Gaspar]
+
 Improvements and Bug fixes on 3.3.4
 -----------------------------------
 
